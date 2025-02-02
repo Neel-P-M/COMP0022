@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Film Festival Dashboard</title>
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="top-section">
+            <!-- Header -->
+            <div class="header">
+                Film
+            </div>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <div class="filter-grid">
+                    <div class="filter-item">
+                        <div class="search-container">
+                            <!-- Search Box -->
+                            <div class="search-wrapper">
+                                <input 
+                                    type="text" 
+                                    class="search-box" 
+                                    placeholder="Search..."
+                                    id="searchInput">
+                                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </div>
+                            
+                            <!-- Genre Filter -->
+                            <div class="genre-filter">
+                                <select class="genre-select">
+                                    <option value="">All Genres</option>
+                                    <option value="action">Action</option>
+                                    <option value="comedy">Comedy</option>
+                                    <option value="drama">Drama</option>
+                                    <option value="horror">Horror</option>
+                                    <option value="romance">Romance</option>
+                                    <option value="thriller">Thriller</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-tags" id="filterTags"></div>
+                            <div class="search-dropdown" id="searchDropdown"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latest Releases Section -->
+        <div class="section">
+            <div class="header">Latest Releases</div>
+            <div class="film-grid">
+                <!-- Film Card -->
+                <div class="film-card">
+                    <div class="film-poster">
+                        <img src="placeholder.jpg" alt="Film Poster">
+                    </div>
+                    <h3>Film Title</h3>
+                    <div class="film-info">Release Date: 2024-02-01</div>
+                    <div class="film-info">Genre: Drama</div>
+                    <div class="film-info">Language: English</div>
+                    <div class="rating">
+                        <span class="stars">★★★★☆</span>
+                        <span class="rating-number">4.0/5.0</span>
+                    </div>
+                    <div class="film-info">Runtime: 120 min</div>
+                </div>
+
+                <div class="film-card">
+                    <div class="film-poster">
+                        <img src="placeholder.jpg" alt="Film Poster">
+                    </div>
+                    <h3>Film Title</h3>
+                    <div class="film-info">Release Date: 2024-02-01</div>
+                    <div class="film-info">Genre: Drama</div>
+                    <div class="film-info">Language: English</div>
+                    <div class="rating">
+                        <span class="stars">★★★★☆</span>
+                        <span class="rating-number">4.0/5.0</span>
+                    </div>
+                    <div class="film-info">Runtime: 120 min</div>
+                </div>
+
+                <div class="film-card">
+                    <div class="film-poster">
+                        <img src="placeholder.jpg" alt="Film Poster">
+                    </div>
+                    <h3>Another Film</h3>
+                    <div class="film-info">Release Date: 2024-01-15</div>
+                    <div class="film-info">Genre: Comedy</div>
+                    <div class="film-info">Language: Spanish</div>
+                    <div class="rating">
+                        <span class="stars">★★★★★</span>
+                        <span class="rating-number">5.0/5.0</span>
+                    </div>
+                    <div class="film-info">Runtime: 95 min</div>
+                </div>
+                <div class="film-card">
+                    <div class="film-poster">
+                        <img src="placeholder.jpg" alt="Film Poster">
+                    </div>
+                    <h3>Film Title</h3>
+                    <div class="film-info">Release Date: 2024-02-01</div>
+                    <div class="film-info">Genre: Drama</div>
+                    <div class="film-info">Language: English</div>
+                    <div class="rating">
+                        <span class="stars">★★★★☆</span>
+                        <span class="rating-number">4.0/5.0</span>
+                    </div>
+                    <div class="film-info">Runtime: 120 min</div>
+                </div>
+
+                <div class="film-card">
+                    <div class="film-poster">
+                        <img src="placeholder.jpg" alt="Film Poster">
+                    </div>
+                    <h3>Film Title</h3>
+                    <div class="film-info">Release Date: 2024-02-01</div>
+                    <div class="film-info">Genre: Drama</div>
+                    <div class="film-info">Language: English</div>
+                    <div class="rating">
+                        <span class="stars">★★★★☆</span>
+                        <span class="rating-number">4.0/5.0</span>
+                    </div>
+                    <div class="film-info">Runtime: 120 min</div>
+                </div>
+
+                <div class="film-card">
+                    <div class="film-poster">
+                        <img src="placeholder.jpg" alt="Film Poster">
+                    </div>
+                    <h3>Another Film</h3>
+                    <div class="film-info">Release Date: 2024-01-15</div>
+                    <div class="film-info">Genre: Comedy</div>
+                    <div class="film-info">Language: Spanish</div>
+                    <div class="rating">
+                        <span class="stars">★★★★★</span>
+                        <span class="rating-number">5.0/5.0</span>
+                    </div>
+                    <div class="film-info">Runtime: 95 min</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Highest Rating Section -->
+        <div class="section">
+            <div class="header">Highest Rating</div>
+            <div class="film-grid">
+                <!-- Film Card -->
+                <div class="film-card">
+                    <div class="film-poster">
+                        <img src="placeholder.jpg" alt="Film Poster">
+                    </div>
+                    <h3>Top Rated Film</h3>
+                    <div class="film-info">Release Date: 2024-01-30</div>
+                    <div class="film-info">Genre: Action</div>
+                    <div class="film-info">Language: English</div>
+                    <div class="rating">
+                        <span class="stars">★★★★★</span>
+                        <span class="rating-number">4.9/5.0</span>
+                    </div>
+                    <div class="film-info">Runtime: 150 min</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
