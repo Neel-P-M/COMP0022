@@ -1,2 +1,10 @@
+# Dependencies
 node_modules/
+.next/
 
+# Build files
+.DS_Store
+*.log
+
+# Large files
+*.node
