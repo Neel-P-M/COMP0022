@@ -14,9 +14,9 @@ export default function Navigation() {
             Movies
           </Link>
         </li>
-        <li className={`nav-item ${pathname === "/reports" ? "active" : ""}`}>
-          <Link href="/reports" className="nav-link">
-            Genre Popularity & Polarization Reports
+        <li className={`nav-item ${pathname === "/genre_report" ? "active" : ""}`}>
+          <Link href="/genre_report" className="nav-link">
+            Genre Analysis Report
           </Link>
         </li>
       </ul>
