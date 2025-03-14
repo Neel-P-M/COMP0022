@@ -43,8 +43,10 @@ export const AuthProvider= ({children}: AuthProviderProps) => {
             } finally {
                 setLoading(false);
             }
-        }
-    })
+        };
+
+        checkLoggedIn;
+    }, []);
 
 
     // Login function

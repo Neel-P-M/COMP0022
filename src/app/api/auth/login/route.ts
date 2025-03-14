@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { sign } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
-import { users, JWT_secret, User } from '@/app/api/auth/user_data/user_data';
+import { users, JWT_secret} from '@/app/api/auth/user_data/user_data';
 
 export async function POST(request: NextRequest) {
     try{
@@ -18,31 +17,26 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        //Check if user already exists
-        const existingUser = users.find(u => u.username === username);
-        if (existingUser) {
+        //Find user
+        const user = users.find(u => u.username === username);
+        if (!user) {
             return NextResponse.json(
-                { error: 'Username already exists' },
-                { status: 409 }
-            );
+                { error: 'Invalid Username'},
+                { status: 401}
+            )
         }
-        // After checking for existing user
-        console.log('User exists check result:', !!existingUser);
 
-        const hashedpw = await bcrypt.hash(password, 10);
-
-        //Create new user
-        const userId = uuidv4();
-        const newUser: User = {
-            id: userId,
-            username: username,
-            password: hashedpw
+        //Verify password
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid){
+            return NextResponse.json(
+                { error: 'Invalid Password'},
+                { status: 401}
+            )
         }
-        users.push(newUser);
-        console.log('After push, users array:', users);
 
         //Create a 14-day cookie
-        const token = sign({ id: userId, username: username}, JWT_secret, { expiresIn: '14d'})
+        const token = sign({ id: user.id, username: username}, JWT_secret, { expiresIn: '14d'})
         cookies().set('authToken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -52,13 +46,13 @@ export async function POST(request: NextRequest) {
         })
 
         return NextResponse.json({
-            id: userId,
+            id: user.id,
             username: username
         });
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('Login error:', error);
         return NextResponse.json(
-            { error: 'Registration failed' },
+            { error: 'Login failed' },
             { status: 500}
         );
     }
