@@ -8,8 +8,6 @@ import { users, JWT_secret, User } from '@/app/api/auth/user_data/user_data';
 export async function POST(request: NextRequest) {
     try{
         const { username, password }= await request.json();
-        console.log('Attempting to register user:', username);
-        console.log('Existing users:', users);
 
         if (!username || !password){
             return NextResponse.json(
@@ -27,7 +25,6 @@ export async function POST(request: NextRequest) {
             );
         }
         // After checking for existing user
-        console.log('User exists check result:', !!existingUser);
 
         const hashedpw = await bcrypt.hash(password, 10);
 
@@ -39,11 +36,10 @@ export async function POST(request: NextRequest) {
             password: hashedpw
         }
         users.push(newUser);
-        console.log('After push, users array:', users);
-
         //Create a 14-day cookie
+        const cookieStore = await cookies()
         const token = sign({ id: userId, username: username}, JWT_secret, { expiresIn: '14d'})
-        cookies().set('authToken', token, {
+        cookieStore.set('authToken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
@@ -56,7 +52,6 @@ export async function POST(request: NextRequest) {
             username: username
         });
     } catch (error) {
-        console.error('Registration error:', error);
         return NextResponse.json(
             { error: 'Registration failed' },
             { status: 500}

@@ -12,6 +12,7 @@ export default function LoginPage() {
   const redirectPath = useSearchParams().get('redirect') || '/'
 
   useEffect(() => {
+    console.log("Login page:", isAuthenticated);
     if (isAuthenticated) {
       router.push(redirectPath);
     }

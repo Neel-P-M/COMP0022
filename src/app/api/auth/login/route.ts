@@ -7,8 +7,6 @@ import { users, JWT_secret} from '@/app/api/auth/user_data/user_data';
 export async function POST(request: NextRequest) {
     try{
         const { username, password }= await request.json();
-        console.log('Attempting to register user:', username);
-        console.log('Existing users:', users);
 
         if (!username || !password){
             return NextResponse.json(
@@ -36,8 +34,9 @@ export async function POST(request: NextRequest) {
         }
 
         //Create a 14-day cookie
+        const cookieStore = await cookies()
         const token = sign({ id: user.id, username: username}, JWT_secret, { expiresIn: '14d'})
-        cookies().set('authToken', token, {
+        cookieStore.set('authToken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
@@ -50,7 +49,6 @@ export async function POST(request: NextRequest) {
             username: username
         });
     } catch (error) {
-        console.error('Login error:', error);
         return NextResponse.json(
             { error: 'Login failed' },
             { status: 500}

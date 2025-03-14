@@ -12,8 +12,8 @@ type DecodedToken = {
 
 export async function GET(request: NextRequest) {
     try {
-        const token = cookies().get('authToken')?.value;
-
+        const cookieStore = await cookies();
+        const token = cookieStore.get('authToken')?.value;
         if(!token){
             return NextResponse.json(
                 { error: 'Not Authenticated'},
@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
             username: decoded.username
         });
     } catch (error) {
-        console.error('Authentication check error:', error);
         return NextResponse.json(
             { error: 'Authenticated failed'},
             { status: 401}
