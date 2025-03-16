@@ -24,8 +24,6 @@ export async function POST(request: NextRequest) {
                 { status: 409 }
             );
         }
-        // After checking for existing user
-
         const hashedpw = await bcrypt.hash(password, 10);
 
         //Create new user

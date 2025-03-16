@@ -21,6 +21,11 @@ export default function Navigation() {
               Genre Analysis Report
             </Link>
           </li>
+          <li className={`nav-item ${pathname === "/movies/unreleased" ? "active" : ""}`}>
+            <Link href="/movies/unreleased" className="nav-link">
+              Unreleased Movie
+            </Link>
+          </li>
         </ul>
         <UserAuth />
       </div>
