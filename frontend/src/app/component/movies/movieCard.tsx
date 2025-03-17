@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PredictiveRating from './predictiveRating';
+import { Rating } from 'react-simple-star-rating';
+import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 interface Principal {
     name: string;
@@ -25,23 +27,11 @@ export const MovieCard = ({
     isNewSubmission = false,
     className = ''
 } : MovieCardProps) => {
-    const formatRatingStars = (rating: number) => {
-        const fullStars = Math.floor(rating / 2);
-        const halfStar = rating % 2 >= 1 ? 1 : 0;
-        const emptyStars = 5 - fullStars - halfStar;
-    
-        return (
-          <div className="flex">
-            {[...Array(fullStars)].map((_, i) => (
-              <span key={`full-${i}`} className="text-yellow-500">★</span>
-            ))}
-            {halfStar === 1 && <span className="text-yellow-500">½</span>}
-            {[...Array(emptyStars)].map((_, i) => (
-              <span key={`empty-${i}`} className="text-gray-300">★</span>
-            ))}
-          </div>
-        );
-    };
+    const [showAllPrincipals, setShowAllPrincipals] = useState(false);
+
+    //Handles shown principals
+    const visibilePrincipals = showAllPrincipals ? principals : principals.slice(0,3);
+    const showExpandButton = principals.length > 3;
 
     return (
         <div className={`bg-[#1a1a24] rounded-lg shadow-md p-4 ${className}`}>
@@ -58,7 +48,7 @@ export const MovieCard = ({
             {/* Display principals */}
             <div className="mt-2">
                 <div className="text-sm">
-                {principals.map((principal, index) => (
+                {visibilePrincipals.map((principal, index) => (
                     <span key={index} className="mr-3">
                         <span className="text-[#a8a8a8]">{principal.name}</span>
                         <span className="text-[#a8a8a8]"> ({principal.role})</span>
@@ -66,18 +56,55 @@ export const MovieCard = ({
                     </span>
                 ))}
                 </div>
+
+                {showExpandButton && (
+                    <button 
+                        onClick={() => setShowAllPrincipals(!showAllPrincipals)}
+                        className="flex items-center mt-1 text-xs text-[#a0a0a0] hover:text-[#e4c9a3] transition-colors"
+                    >
+                        {showAllPrincipals ? (
+                            <>
+                                <span>Show less</span>
+                                <FiChevronUp size={14} className="ml-1" />
+                            </>
+                        ) : (
+                            <>
+                                <span>Show all {principals.length} principals</span>
+                                <FiChevronDown size={14} className="ml-1" />
+                            </>
+                        )}
+                    </button>
+                )}
             </div>
+            
             {/* Rating display */}
             <div className="mt-3">
                 {isNewSubmission ? (
-                <PredictiveRating
-                    title={title}
-                    genres={genres}
-                    principals={principals}
-                    releaseYear={releaseYear}
-                />
+                    <PredictiveRating
+                        title={title}
+                        genres={genres}
+                        principals={principals}
+                        releaseYear={releaseYear}
+                    />
                 ) : (
-                rating !== undefined && formatRatingStars(rating)
+                    rating !== undefined && (
+                        <div className="relative group">
+                            <Rating
+                                readonly
+                                initialValue={rating}
+                                allowFraction
+                                transition
+                                fillColor="#facc15"
+                                size={18}
+                                SVGclassName="inline-block"
+                            />
+                        
+                            {/* Rating appears on hover */}
+                            <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-10 whitespace-nowrap pointer-events-none">
+                                {(rating).toFixed(1)}/5
+                            </div>
+                        </div>
+                    )
                 )}
             </div>
         </div>

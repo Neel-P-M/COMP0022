@@ -14,35 +14,6 @@ export async function GET() {
     } catch (pythonError) {
       console.error('Python execution failed:', pythonError);
       console.log('Falling back to sample data...');
-      
-      // If Python execution fails, return sample data
-      return NextResponse.json({
-        genre_distribution: [
-          { genre_name: "Drama", movie_count: 28 },
-          { genre_name: "Comedy", movie_count: 22 },
-          { genre_name: "Action", movie_count: 18 },
-          { genre_name: "Thriller", movie_count: 14 },
-          { genre_name: "Sci-Fi", movie_count: 10 }
-        ],
-        genre_ratings: [
-          { genre_name: "Drama", avg_rating: 8.2, min_rating: 6.5, max_rating: 9.8 },
-          { genre_name: "Comedy", avg_rating: 7.8, min_rating: 5.9, max_rating: 9.2 },
-          { genre_name: "Action", avg_rating: 7.9, min_rating: 6.0, max_rating: 9.5 },
-          { genre_name: "Thriller", avg_rating: 8.1, min_rating: 6.7, max_rating: 9.6 },
-          { genre_name: "Sci-Fi", avg_rating: 8.0, min_rating: 6.8, max_rating: 9.4 }
-        ],
-        genre_trends: [
-          { genre_name: "Drama", release_year: 2020, movie_count: 8 },
-          { genre_name: "Drama", release_year: 2021, movie_count: 10 },
-          { genre_name: "Drama", release_year: 2022, movie_count: 10 },
-          { genre_name: "Comedy", release_year: 2020, movie_count: 7 },
-          { genre_name: "Comedy", release_year: 2021, movie_count: 8 },
-          { genre_name: "Comedy", release_year: 2022, movie_count: 7 },
-          { genre_name: "Action", release_year: 2020, movie_count: 5 },
-          { genre_name: "Action", release_year: 2021, movie_count: 6 },
-          { genre_name: "Action", release_year: 2022, movie_count: 7 }
-        ]
-      });
     }
   } catch {
     return NextResponse.json(

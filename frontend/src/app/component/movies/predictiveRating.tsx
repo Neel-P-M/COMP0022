@@ -75,20 +75,20 @@ const PredictiveRating = ({
             </div>
         ) : rating ? (
             <div className="relative group">
-                <Rating
-                    readonly
-                    initialValue={rating} // Convert 10-point to 5-star scale
-                    allowFraction
-                    transition
-                    fillColor="#facc15"
-                    size={18}
-                    SVGclassName="inline-block"
-                />
-            
-                {/* Rating appears on hover */}
-                <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-10 whitespace-nowrap pointer-events-none">
-                    {rating.toFixed(1)}/5
-                </div>
+              <Rating
+                  readonly
+                  initialValue={rating} // Convert 10-point to 5-star scale
+                  allowFraction
+                  transition
+                  fillColor="#facc15"
+                  size={18}
+                  SVGclassName="inline-block"
+              />
+          
+              {/* Rating appears on hover */}
+              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 z-10 whitespace-nowrap pointer-events-none">
+                  {rating.toFixed(1)}/5
+              </div>
             </div>
       ) : (
         <div className="flex">
