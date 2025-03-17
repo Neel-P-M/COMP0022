@@ -10,27 +10,34 @@ type DecodedToken = {
     expired: number;
 };
 
-export async function GET() {
+export async function getAuthUser() {
     try {
         const cookieStore = await cookies();
         const token = cookieStore.get('authToken')?.value;
         if(!token){
-            return NextResponse.json(
-                { error: 'Not Authenticated'},
-                { status: 401}
-            );
+            return null;
         }
 
         const decoded = verify(token, JWT_secret) as DecodedToken;
 
-        return NextResponse.json({
+        return {
             id: decoded.id,
             username: decoded.username
-        });
+        };
     } catch {
-        return NextResponse.json(
-            { error: 'Authenticated failed'},
+        return null;
+    }
+}
+
+export async function GET() {
+    const user = await getAuthUser();
+
+    if (!user) {
+        return NextResponse.json (
+            { error: 'Not Authenticated'},
             { status: 401}
         );
     }
+
+    return NextResponse.json(user);
 }

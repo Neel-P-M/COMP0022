@@ -60,7 +60,7 @@ export const MovieCard = ({
                 {showExpandButton && (
                     <button 
                         onClick={() => setShowAllPrincipals(!showAllPrincipals)}
-                        className="flex items-center mt-1 text-xs text-[#a0a0a0] hover:text-[#e4c9a3] transition-colors"
+                        className="flex items-center mt-1 text-xs font-bold text-white hover:text-[#e4c9a3] transition-colors"
                     >
                         {showAllPrincipals ? (
                             <>
