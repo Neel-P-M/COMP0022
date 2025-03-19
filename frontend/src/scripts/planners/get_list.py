@@ -28,13 +28,13 @@ def get_list(user_id, list_id):
         SELECT 
             planner_id as id, 
             title, 
-            note, 
+            note
         FROM 
             planner_lists
         WHERE 
             planner_id = %s and user_id = %s
         """
-        cursor.execute(fetch_query, (user_id, list_id))
+        cursor.execute(fetch_query, (list_id, user_id))
         planner_list = cursor.fetchone()
 
         if not planner_list:
@@ -49,7 +49,6 @@ def get_list(user_id, list_id):
             m.titleString AS title,
             m.releaseYear AS release_year,
             m.avgRating AS rating,
-            m.posterPath AS poster_path,
             n.nameId,
             n.nameString AS name,
             p.roleString AS role,

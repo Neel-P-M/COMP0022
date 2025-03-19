@@ -4,7 +4,7 @@ import path from 'path';
 import { runPythonScript } from '@/app/api/utils/runPythonScript';
 
 //Add a movie to a planner list
-export async function DELETE({ params }: { params: { listId: string, movieId: string} }) {
+export async function DELETE(req: Request, { params }: { params: { id: string, movieId: string} }) {
     const user = await getAuthUser();
     if (!user) {
         return NextResponse.json (
@@ -14,7 +14,8 @@ export async function DELETE({ params }: { params: { listId: string, movieId: st
     }
 
     try {
-        const { listId, movieId } = params;
+        const paramsValue = await Promise.resolve(params);
+        const { id: listId, movieId } = paramsValue;
 
         if (!listId) {
             return NextResponse.json(
@@ -30,7 +31,7 @@ export async function DELETE({ params }: { params: { listId: string, movieId: st
             )
         }
 
-        const scriptPath = path.join(process.cwd(), 'scripts', 'planners', 'remove_movie_from_list.py')
+        const scriptPath = path.join(process.cwd(),'src', 'scripts', 'planners', 'remove_movie_from_list.py')
         const result = await runPythonScript(scriptPath, [user.id, listId, movieId]);
 
         const deleted = JSON.parse(result);
@@ -42,7 +43,7 @@ export async function DELETE({ params }: { params: { listId: string, movieId: st
             )
         }
 
-        return NextResponse.json(deleted);
+        return new Response(null, { status: 204});
     } catch (error) {
         console.error('Could not add movie to list:', error);
         return NextResponse.json(

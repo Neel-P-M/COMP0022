@@ -21,7 +21,7 @@ export async function GET() {
     }
 
     try {
-        const scriptPath = path.join(process.cwd(), 'scripts', 'planners', 'lists.py')
+        const scriptPath = path.join(process.cwd(), 'src', 'scripts', 'planners', 'lists.py')
         const result = await runPythonScript(scriptPath, [user.id]);
         //Parse the JSON result
         const lists = JSON.parse(result);
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { title, note } = body;
 
-        const scriptPath = path.join(process.cwd(), 'scripts', 'planners', 'create_list.py')
+        const scriptPath = path.join(process.cwd(), 'src', 'scripts', 'planners', 'create_list.py')
         const result = await runPythonScript(scriptPath, [user.id, title, note]);
 
         const newList = JSON.parse(result);

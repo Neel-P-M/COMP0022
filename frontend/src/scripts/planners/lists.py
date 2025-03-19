@@ -27,11 +27,11 @@ def get_planner_lists(user_id):
         SELECT 
             planner_id as id, 
             title, 
-            note, 
+            note
         FROM 
             planner_lists
         WHERE 
-            user_id = ?
+            user_id = %s
         """
 
         cursor.execute(fetch_query, (user_id,))

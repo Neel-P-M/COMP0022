@@ -26,6 +26,11 @@ export default function Navigation() {
               Unreleased Movie
             </Link>
           </li>
+          <li className={`nav-item ${pathname === "/planner" ? "active" : ""}`}>
+            <Link href="/planner" className="nav-link">
+              Planner
+            </Link>
+          </li>
         </ul>
         <UserAuth />
       </div>

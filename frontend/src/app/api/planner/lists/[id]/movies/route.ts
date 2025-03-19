@@ -4,7 +4,7 @@ import path from 'path';
 import { runPythonScript } from '@/app/api/utils/runPythonScript';
 
 //Add a movie to a planner list
-export async function POST(req: Request, { params }: { params: { listId: string} }) {
+export async function POST(req: Request, { params }: { params: { id: string} }) {
     const user = await getAuthUser();
     if (!user) {
         return NextResponse.json (
@@ -14,7 +14,8 @@ export async function POST(req: Request, { params }: { params: { listId: string}
     }
 
     try {
-        const listId = params.listId;
+        const paramsValue = await Promise.resolve(params);
+        const listId = paramsValue.id;
         const body = await req.json();
         const { movieId } = body;
 
@@ -32,7 +33,7 @@ export async function POST(req: Request, { params }: { params: { listId: string}
             )
         }
 
-        const scriptPath = path.join(process.cwd(), 'scripts', 'planners', 'add_movie_to_list.py')
+        const scriptPath = path.join(process.cwd(),'src', 'scripts', 'planners', 'add_movie_to_list.py')
         const result = await runPythonScript(scriptPath, [user.id, listId, movieId.toString()]);
 
         const added = JSON.parse(result);

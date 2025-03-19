@@ -4,7 +4,7 @@ import path from 'path';
 import { runPythonScript } from '@/app/api/utils/runPythonScript';
 
 //Fetch a specific planner list
-export async function GET(req: Request, { params }: { params: { listId: string} }) {
+export async function GET(req: Request, { params }: { params: { id: string} }) {
     const user = await getAuthUser();
     if (!user) {
         return NextResponse.json (
@@ -14,7 +14,8 @@ export async function GET(req: Request, { params }: { params: { listId: string} 
     }
 
     try {
-        const listId = params.listId;
+        const paramsValue = await Promise.resolve(params);
+        const listId = paramsValue.id;
 
         if (!listId) {
             return NextResponse.json(
@@ -23,7 +24,7 @@ export async function GET(req: Request, { params }: { params: { listId: string} 
             )
         }
 
-        const scriptPath = path.join(process.cwd(), 'scripts', 'planners', 'get_list.py')
+        const scriptPath = path.join(process.cwd(),'src', 'scripts', 'planners', 'get_list.py')
         const result = await runPythonScript(scriptPath, [user.id, listId]);
 
         const list = JSON.parse(result);
@@ -44,7 +45,7 @@ export async function GET(req: Request, { params }: { params: { listId: string} 
     }
 }
 
-export async function PUT(req: Request, { params }: { params: { listId: string} }){
+export async function PUT(req: Request, { params }: { params: { id: string} }){
     const user = await getAuthUser();
     if (!user) {
         return NextResponse.json (
@@ -54,7 +55,8 @@ export async function PUT(req: Request, { params }: { params: { listId: string} 
     }
 
     try {
-        const listId = params.listId;
+        const paramsValue = await Promise.resolve(params);
+        const listId = paramsValue.id;
         const body = await req.json();
         const { title, note } = body;
 
@@ -72,7 +74,7 @@ export async function PUT(req: Request, { params }: { params: { listId: string} 
             )
         }
 
-        const scriptPath = path.join(process.cwd(), 'scripts', 'planners', 'update_list.py')
+        const scriptPath = path.join(process.cwd(),'src', 'scripts', 'planners', 'update_list.py')
         const result = await runPythonScript(scriptPath, [user.id, listId, title, note]);
 
         const updated = JSON.parse(result);
@@ -93,7 +95,7 @@ export async function PUT(req: Request, { params }: { params: { listId: string} 
     }
 }
 
-export async function DELETE(req: Request, { params }: { params: { listId: string} }){
+export async function DELETE(req: Request, { params }: { params: { id: string } }){
     const user = await getAuthUser();
     if (!user) {
         return NextResponse.json (
@@ -103,7 +105,8 @@ export async function DELETE(req: Request, { params }: { params: { listId: strin
     }
 
     try {
-        const listId = params.listId;
+        const paramsValue = await Promise.resolve(params);
+        const listId = paramsValue.id;
 
         if (!listId) {
             return NextResponse.json(
@@ -112,7 +115,7 @@ export async function DELETE(req: Request, { params }: { params: { listId: strin
             )
         }
 
-        const scriptPath = path.join(process.cwd(), 'scripts', 'planners', 'delete_list.py')
+        const scriptPath = path.join(process.cwd(),'src', 'scripts', 'planners', 'delete_list.py')
         const result = await runPythonScript(scriptPath, [user.id, listId]);
 
         const deleted = JSON.parse(result);
@@ -123,7 +126,7 @@ export async function DELETE(req: Request, { params }: { params: { listId: strin
             )
         }
 
-        return NextResponse.json(null, { status: 204});
+        return new Response(null, { status: 204});
     } catch (error) {
         console.error('Could not delete planner list:', error);
         return NextResponse.json(

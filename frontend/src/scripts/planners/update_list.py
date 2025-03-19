@@ -25,13 +25,13 @@ def update_list(user_id, list_id, title, note):
         #Fetch the specific list under a specific user
         fetch_query = """
         SELECT 
-            planner_id as id, 
+            planner_id as id
         FROM 
             planner_lists
         WHERE 
             planner_id = %s and user_id = %s
         """
-        cursor.execute(fetch_query, (user_id, list_id))
+        cursor.execute(fetch_query, (list_id, user_id))
         planner_list = cursor.fetchone()
 
         if not planner_list:
@@ -43,7 +43,7 @@ def update_list(user_id, list_id, title, note):
         update_query = """
         UPDATE planner_lists
         SET
-            title = %s
+            title = %s,
             note = %s
         WHERE 
             planner_id = %s and user_id = %s
@@ -97,8 +97,8 @@ def main():
     list_id = sys.argv[2]
     title = sys.argv[3]
     note = sys.argv[4]
-    update_list = update_list(user_id, list_id, title, note)
-    if update_list is None:
+    updated = update_list(user_id, list_id, title, note)
+    if updated is None:
         sys.exit(1)
 
     class DecimalEncoder(json.JSONEncoder):
@@ -107,7 +107,7 @@ def main():
                 return float(obj)
             return super(DecimalEncoder, self).default(obj)
         
-    print(json.dumps(update_list, cls=DecimalEncoder, indent=2))
+    print(json.dumps(updated, cls=DecimalEncoder, indent=2))
 
 if __name__ == "__main__":
     main()
