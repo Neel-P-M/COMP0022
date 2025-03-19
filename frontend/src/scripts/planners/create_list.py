@@ -1,10 +1,10 @@
+
 import json
 import mysql.connector
 import sys
 import decimal
 
-
-def get_planner_lists(user_id):
+def create_list(user_id, title, note):
     """
     Connect to the MySQL database, execute the specified query,
     and output results in the requested format.
@@ -21,54 +21,52 @@ def get_planner_lists(user_id):
         )
 
         cursor = conn.cursor(dictionary=True)
-        
-        #Gets all planner lists for the specific user
-        fetch_query = """
+
+        #Inserts a new planner list to the database
+        insert_query = """
+        INSERT INTO planner_lists 
+            (user_id, title, note) 
+        VALUES 
+            (%s, %s, %s)
+        """
+        cursor.execute(insert_query, (user_id, title, note))
+        new_list_id = cursor.lastrowid
+        conn.commit()
+
+        #Returns the newly added planner list
+        select_query = """
         SELECT 
             planner_id as id, 
             title, 
-            note, 
+            note
         FROM 
             planner_lists
         WHERE 
-            user_id = ?
+            planner_id = %s
         """
+        cursor.execute(select_query, (new_list_id,))
+        new_list = cursor.fetchone()
+        new_list['movieCount'] = 0
 
-        cursor.execute(fetch_query, (user_id,))
-        lists = cursor.fetchall()
-
-        #Counts the number of movies in each list
-        for list in lists:
-            count_query = """
-            SELECT 
-                COUNT(*) as count 
-            FROM 
-                planner_movies 
-            WHERE 
-                planner_id = %s
-            """
-
-            cursor.execute(count_query, (list['id'],))
-            count = cursor.fetchone()
-            list['movieCount'] = count['count']
-        
         cursor.close()
         conn.close()
 
-        return lists
-
+        return new_list
+    
     except Exception as e:
         print(f"Error: {str(e)}", file=sys.stderr)
         return None
-        
+
 def main():
-    if len(sys.argv) < 2:
-        print("Error: User ID is required", file=sys.stderr)
+    if len(sys.argv) < 4:
+        print("Error: User ID, title and note are required", file=sys.stderr)
         sys.exit(1)
     
     user_id = sys.argv[1]
-    lists = get_planner_lists(user_id)
-    if lists is None:
+    title = sys.argv[2]
+    note = sys.argv[3]
+    new_list = create_list(user_id, title, note)
+    if new_list is None:
         sys.exit(1)
 
     class DecimalEncoder(json.JSONEncoder):
@@ -77,7 +75,7 @@ def main():
                 return float(obj)
             return super(DecimalEncoder, self).default(obj)
         
-    print(json.dumps(lists, cls=DecimalEncoder, indent=2))
+    print(json.dumps(new_list, cls=DecimalEncoder, indent=2))
 
 if __name__ == "__main__":
     main()
