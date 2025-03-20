@@ -4,6 +4,12 @@ import mysql.connector
 import sys
 import decimal
 
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, decimal.Decimal):
+            return float(obj)
+        return super(DecimalEncoder, self).default(obj)
+
 def add_movie_to_list(user_id, list_id, movie_id):
     """
     Connect to the MySQL database, execute the specified query,
@@ -27,13 +33,13 @@ def add_movie_to_list(user_id, list_id, movie_id):
         SELECT 
             planner_id as id, 
             title, 
-            note, 
+            note
         FROM 
             planner_lists
         WHERE 
             planner_id = %s and user_id = %s
         """
-        cursor.execute(fetch_query, (user_id, list_id))
+        cursor.execute(fetch_query, (list_id, user_id))
         planner_list = cursor.fetchone()
 
         if not planner_list:
@@ -56,7 +62,12 @@ def add_movie_to_list(user_id, list_id, movie_id):
         if existing:
             cursor.close()
             conn.close()
-            return None
+            return {
+                "success": False,
+                "error": "This movie is already in the list",
+                "listId": int(list_id),
+                "movieId": int(movie_id)
+            }
 
         #Add the movie to the list
         insert_query = """
@@ -107,11 +118,9 @@ def main():
     if res is None:
         sys.exit(1)
 
-    class DecimalEncoder(json.JSONEncoder):
-        def default(self, obj):
-            if isinstance(obj, decimal.Decimal):
-                return float(obj)
-            return super(DecimalEncoder, self).default(obj)
+    if not res["success"]:
+        print(json.dumps(res, cls=DecimalEncoder, indent=2))
+        sys.exit(0)
         
     print(json.dumps(res, cls=DecimalEncoder, indent=2))
 

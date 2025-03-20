@@ -292,11 +292,11 @@ export default function ListPage() {
                                     </button>
                                 </div>
                             </div>
-                        {list.note && <p className="text-gray-400 mb-4">{list.note}</p>}
-                        <p className="text-sm text-gray-300">
-                            {list.movie_count} {list.movie_count === 1 ? 'movie' : 'movies'} in this list
-                        </p>
-                    </div>
+                            {list.note && <p className="text-gray-400 mb-4">{list.note}</p>}
+                            <p className="text-sm text-gray-300">
+                                {list.movie_count} {list.movie_count === 1 ? 'movie' : 'movies'} in this list
+                            </p>
+                        </div>
                     )}
                 </div>
             </div>
