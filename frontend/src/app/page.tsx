@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MovieCard } from './component/movies/movieCard';
+import { useAuth } from '@/app/context/AuthContext';
+import Link from 'next/link';
+import { NewListForm } from '@/app/component/movies/newListForm'; 
 
 interface Principal {
   name: string;
@@ -18,10 +21,34 @@ interface Movie {
   principals: Principal[];
 }
 
+interface MovieList {
+  id: number;
+  title: string;
+  note: string;
+  movieCount: number;
+}
+
 export default function Home() {
+  const { isAuthenticated } = useAuth();
   const [movies, setMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Lists state
+  const [userLists, setUserLists] = useState<MovieList[]>([]);
+  const [isLoadingLists, setIsLoadingLists] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
+  const [selectedListId, setSelectedListId] = useState<number | null>(null);
+  const [isAddingToList, setIsAddingToList] = useState(false);
+  const [addToListSuccess, setAddToListSuccess] = useState<string | null>(null);
+  const [addToListError, setAddToListError] = useState<string | null>(null);
+  const [showListModal, setShowListModal] = useState(false);
+  const [movieToAdd, setMovieToAdd] = useState<Movie | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [showNewListForm, setShowNewListForm] = useState(false);
+  const [newListTitle, setNewListTitle] = useState('');
+  const [newListNote, setNewListNote] = useState('');
+  const [isCreatingList, setIsCreatingList] = useState(false);
 
   //Search states
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +64,7 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [paginatedMovies, setPaginatedMovies] = useState<Movie[]>([]);
   
-  // Get all unique genres from both movie arrays
+  // Get all unique genres from movies array
   const allGenres = [...new Set([
     ...movies.flatMap(movie => movie.genres),
   ])].sort();
@@ -48,12 +75,12 @@ export default function Home() {
     )
   )].sort();
 
-  //Fetch data with API
+  // Fetch movies data
   useEffect(() => {
     async function fetchMoviesData() {
       try {
         setIsLoading(true);
-        const res = await fetch ('/api/movies');
+        const res = await fetch('/api/movies');
 
         if (!res.ok) {
           console.log('API call failed');
@@ -83,9 +110,36 @@ export default function Home() {
     fetchMoviesData();
   }, []);
 
-  //Filters movies when filters change
+  // Fetch user's lists if authenticated
   useEffect(() => {
-    setIsLoading(true);
+    async function fetchUserLists() {
+      if (!isAuthenticated) return;
+      
+      try {
+        setIsLoadingLists(true);
+        setListError(null);
+        const res = await fetch('/api/planner/lists');
+
+        if (!res.ok) {
+          setListError('Failed to fetch your lists. Please try again later.');
+          return;
+        }
+
+        const data = await res.json();
+        setUserLists(data);
+      } catch (error) {
+        console.error('Error fetching user lists:', error);
+        setListError('Failed to load your lists. Please try again later.');
+      } finally {
+        setIsLoadingLists(false);
+      }
+    }
+
+    fetchUserLists();
+  }, [isAuthenticated]);
+
+  // Filter movies when filters change
+  useEffect(() => {
     setCurrentPageIndex(1);
     const filterMovies = (movieList: Movie[]) => {
       return movieList.filter(movie => {
@@ -101,25 +155,139 @@ export default function Home() {
 
     const filtered = filterMovies(movies)
     setFilteredMovies(filtered);
-
     setTotalPages(Math.ceil(filtered.length / moviesPerPage));
-    setIsLoading(false);
-  }, [searchTerm, selectedGenre, searchPrincipal, movies]);
+  }, [searchTerm, selectedGenre, searchPrincipal, movies, moviesPerPage]);
 
-  //Handles change of movies in pagination
+  // Handle pagination
   useEffect(() => {
     const lastMovieIndex = currentPageIndex * moviesPerPage;
     const firstMovieIndex = lastMovieIndex - moviesPerPage;
     setPaginatedMovies(filteredMovies.slice(firstMovieIndex, lastMovieIndex));
-  }, [filteredMovies, currentPageIndex, moviesPerPage])
+  }, [filteredMovies, currentPageIndex, moviesPerPage]);
 
-  //Page change handler
-  const handlePageChange = (pageNumber: number) => {
+  // Open add to list modal with auth check
+  const handleAddToList = useCallback((movie: Movie) => {
+    if (!isAuthenticated) {
+      // Show error notification instead of redirecting
+      setAuthError("Please log in to add movies to your lists");
+      
+      // Auto-clear the error after 3 seconds
+      setTimeout(() => {
+        setAuthError(null);
+      }, 3000);
+      
+      return;
+    }
+    
+    setMovieToAdd(movie);
+    setSelectedListId(null);
+    setAddToListSuccess(null);
+    setAddToListError(null);
+    setShowNewListForm(false);
+    setShowListModal(true);
+  }, [isAuthenticated]);
+
+  // Create a new list
+  const createNewList = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newListTitle.trim()) {
+      return;
+    }
+    
+    try {
+      setIsCreatingList(true);
+      
+      const res = await fetch('/api/planner/lists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newListTitle.trim(),
+          note: newListNote.trim(),
+        }),
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to create list');
+      }
+      
+      const newList = await res.json();
+      setUserLists(prevLists => [...prevLists, newList]);
+      setSelectedListId(newList.id);
+      setShowNewListForm(false);
+      setNewListTitle('');
+      setNewListNote('');
+      
+    } catch (error) {
+      console.error('Error creating list:', error);
+      setAddToListError('Failed to create new list. Please try again.');
+    } finally {
+      setIsCreatingList(false);
+    }
+  }, [newListTitle, newListNote]);
+
+  // The handler to cancel form display
+  const handleCancelNewListForm = useCallback(() => {
+    setShowNewListForm(false);
+  }, []);
+
+  // Add movie to selected list
+  const addMovieToList = useCallback(async () => {
+    if (!selectedListId || !movieToAdd) return;
+    
+    try {
+      setIsAddingToList(true);
+      setAddToListError(null);
+      
+      const res = await fetch(`/api/planner/lists/${selectedListId}/movies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          movieId: movieToAdd.id
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.success === false) {
+        throw new Error(data.error || 'Failed to add movie to list');
+      }
+
+      setAddToListSuccess(`Added "${movieToAdd.title}" to your list!`);
+      
+      // Update list count in the userLists state
+      setUserLists(prevLists => 
+        prevLists.map(list => 
+          list.id === selectedListId 
+            ? { ...list, movieCount: data.movieCount }
+            : list
+        )
+      );
+      
+      // Auto-close after success
+      setTimeout(() => {
+        setShowListModal(false);
+        setAddToListSuccess(null);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error adding movie to list:', error);
+      setAddToListError(error instanceof Error ? error.message : 'Failed to add movie to list');
+    } finally {
+      setIsAddingToList(false);
+    }
+  }, [selectedListId, movieToAdd]);
+
+  // Page change handler
+  const handlePageChange = useCallback((pageNumber: number) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setCurrentPageIndex(pageNumber);
-  }
+  }, []);
 
-  //Movies per page handler
+  // Movies per page selector component
   const PageSizeSelector = () => {
     return (
       <div className="flex items-center gap-2 text-sm">
@@ -138,6 +306,119 @@ export default function Home() {
     );
   };
 
+  // Add to list modal component
+  const AddToListModal = () => {
+    if (!showListModal || !movieToAdd) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div className="bg-[#1a1a24] rounded-lg p-6 max-w-md w-full">
+          <h2 className="text-xl font-bold text-[#e4c9a3] mb-4">
+            Add "{movieToAdd.title}" to a List
+          </h2>
+          
+          {addToListSuccess ? (
+            <div className="bg-green-900/30 border border-green-800 text-white p-4 rounded-lg mb-4">
+              {addToListSuccess}
+            </div>
+          ) : (
+            <>
+              {addToListError && (
+                <div className="bg-red-900/30 border border-red-800 text-white p-4 rounded-lg mb-4">
+                  {addToListError}
+                </div>
+              )}
+              
+              {showNewListForm ? (
+                <NewListForm 
+                  newListTitle={newListTitle}
+                  setNewListTitle={setNewListTitle}
+                  newListNote={newListNote}
+                  setNewListNote={setNewListNote}
+                  isCreatingList={isCreatingList}
+                  onSubmit={createNewList}
+                  onCancel={handleCancelNewListForm}
+                />
+              ) : (
+                <>
+                  {isLoadingLists ? (
+                    <div className="text-center py-4 mb-4">
+                      <p className="text-gray-400">Loading your lists...</p>
+                    </div>
+                  ) : listError ? (
+                    <div className="bg-red-900/30 border border-red-800 text-white p-4 rounded-lg mb-4">
+                      {listError}
+                    </div>
+                  ) : userLists.length > 0 ? (
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium mb-2">
+                        Select a list:
+                      </label>
+                      <select
+                        value={selectedListId || ''}
+                        onChange={(e) => setSelectedListId(Number(e.target.value))}
+                        className="w-full p-3 rounded-lg bg-[#0d0d14] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3]"
+                      >
+                        <option value="">-- Select a list --</option>
+                        {userLists.map((list) => (
+                          <option key={list.id} value={list.id}>
+                            {list.title} ({list.movieCount} movies)
+                          </option>
+                        ))}
+                      </select>
+                      
+                      <div className="mt-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setShowNewListForm(true)}
+                          className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline text-sm"
+                        >
+                          Or create a new list
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 mb-4">
+                      <p className="text-gray-400 mb-2">You don't have any lists yet.</p>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewListForm(true)}
+                        className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
+                      >
+                        Create your first list
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowListModal(false)}
+                  className="bg-[#2a2a34] text-white py-2 px-4 rounded-lg hover:bg-[#3a3a44] transition duration-200"
+                >
+                  Cancel
+                </button>
+                {!showNewListForm && (
+                  <button
+                    type="button"
+                    onClick={addMovieToList}
+                    disabled={!selectedListId || isAddingToList}
+                    className="bg-[#d2b48c] text-[#0d0d14] py-2 px-6 rounded-lg hover:bg-[#e4c9a3] transition duration-200 disabled:opacity-50"
+                  >
+                    {isAddingToList ? 'Adding...' : 'Add to List'}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Pagination component
   const Pagination = () => {
     if (totalPages < 1) {
       return null;
@@ -292,14 +573,30 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {paginatedMovies.map((movie) => (
                 <div key={movie.id} className="flex flex-col h-full">      
-                  <MovieCard
-                    title={movie.title}
-                    releaseYear={movie.release_year}
-                    genres={movie.genres}
-                    principals={movie.principals}
-                    rating={movie.rating}
-                    className="flex-grow"
-                  />
+                  <div className="flex-grow">
+                    <MovieCard
+                      title={movie.title}
+                      releaseYear={movie.release_year}
+                      genres={movie.genres}
+                      principals={movie.principals}
+                      rating={movie.rating}
+                      className="flex-grow"
+                    />
+                  </div>
+                  <div className="bg-[#13131b] p-4 flex justify-between items-center">
+                    <Link 
+                      href={`/movies/${movie.id}`}
+                      className="text-sm text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
+                    >
+                      View Details
+                    </Link>
+                    <button 
+                      onClick={() => handleAddToList(movie)}
+                      className="text-sm text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
+                    >
+                      Add to List
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -316,6 +613,23 @@ export default function Home() {
           </div>
         )}
       </div>
+      
+      {/* Authentication Error Notification */}
+      {authError && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-900/90 text-white px-6 py-3 rounded-lg shadow-lg border border-red-800 flex items-center">
+          <span className="mr-2">⚠️</span>
+          <span>{authError}</span>
+          <button 
+            onClick={() => setAuthError(null)} 
+            className="ml-4 text-white/80 hover:text-white"
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
+      {/* Add to List Modal */}
+      <AddToListModal />
     </div>
   );
 }
