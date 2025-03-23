@@ -27,13 +27,13 @@ def delete_movie_from_list(user_id, list_id, movie_id):
         SELECT 
             planner_id as id, 
             title, 
-            note, 
+            note
         FROM 
             planner_lists
         WHERE 
             planner_id = %s and user_id = %s
         """
-        cursor.execute(fetch_query, (user_id, list_id))
+        cursor.execute(fetch_query, (list_id, user_id))
         planner_list = cursor.fetchone()
 
         if not planner_list:
@@ -56,7 +56,13 @@ def delete_movie_from_list(user_id, list_id, movie_id):
         if existing:
             cursor.close()
             conn.close()
-            return None
+            return {
+                "success": False,
+                "message": "Movie not found in the list",
+                "listId": int(list_id),
+                "movieId": int(movie_id),
+                "movieCount": 0  # You might want to get the actual count here
+            }
 
         #Delete the movie from the list
         delete_query = """

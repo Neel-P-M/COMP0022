@@ -31,7 +31,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string, m
             )
         }
 
-        const scriptPath = path.join(process.cwd(),'src', 'scripts', 'planners', 'remove_movie_from_list.py')
+        const scriptPath = path.join(process.cwd(),'src', 'scripts', 'planners', 'delete_movie_from_list.py')
         const result = await runPythonScript(scriptPath, [user.id, listId, movieId]);
 
         const deleted = JSON.parse(result);

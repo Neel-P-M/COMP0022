@@ -81,7 +81,6 @@ def get_list(user_id, list_id):
             'title': '',
             'release_year': None,
             'rating': None,
-            'poster_path': None,
             'genres': set(),
             'principals_set': set(),  # Store tuples in a set for deduplication
         })
@@ -94,7 +93,6 @@ def get_list(user_id, list_id):
             movie['title'] = row['title']
             movie['release_year'] = row['release_year']
             movie['rating'] = row['rating']
-            movie['poster_path'] = row['poster_path']
             
             # Add genres (from comma-separated string to set to avoid duplicates)
             if row['genres']:

@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MovieCard } from './component/movies/movieCard';
 import { useAuth } from '@/app/context/AuthContext';
 import Link from 'next/link';
-import { NewListForm } from '@/app/component/movies/newListForm'; 
 
 interface Principal {
   name: string;
@@ -45,7 +44,6 @@ export default function Home() {
   const [showListModal, setShowListModal] = useState(false);
   const [movieToAdd, setMovieToAdd] = useState<Movie | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [showNewListForm, setShowNewListForm] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
   const [newListNote, setNewListNote] = useState('');
   const [isCreatingList, setIsCreatingList] = useState(false);
@@ -183,7 +181,6 @@ export default function Home() {
     setSelectedListId(null);
     setAddToListSuccess(null);
     setAddToListError(null);
-    setShowNewListForm(false);
     setShowListModal(true);
   }, [isAuthenticated]);
 
@@ -216,7 +213,6 @@ export default function Home() {
       const newList = await res.json();
       setUserLists(prevLists => [...prevLists, newList]);
       setSelectedListId(newList.id);
-      setShowNewListForm(false);
       setNewListTitle('');
       setNewListNote('');
       
@@ -228,10 +224,6 @@ export default function Home() {
     }
   }, [newListTitle, newListNote]);
 
-  // The handler to cancel form display
-  const handleCancelNewListForm = useCallback(() => {
-    setShowNewListForm(false);
-  }, []);
 
   // Add movie to selected list
   const addMovieToList = useCallback(async () => {
@@ -328,68 +320,51 @@ export default function Home() {
                   {addToListError}
                 </div>
               )}
-              
-              {showNewListForm ? (
-                <NewListForm 
-                  newListTitle={newListTitle}
-                  setNewListTitle={setNewListTitle}
-                  newListNote={newListNote}
-                  setNewListNote={setNewListNote}
-                  isCreatingList={isCreatingList}
-                  onSubmit={createNewList}
-                  onCancel={handleCancelNewListForm}
-                />
+              {isLoadingLists ? (
+                <div className="text-center py-4 mb-4">
+                  <p className="text-gray-400">Loading your lists...</p>
+                </div>
+              ) : listError ? (
+                <div className="bg-red-900/30 border border-red-800 text-white p-4 rounded-lg mb-4">
+                  {listError}
+                </div>
+              ) : userLists.length > 0 ? (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">
+                    Select a list:
+                  </label>
+                  <select
+                    value={selectedListId || ''}
+                    onChange={(e) => setSelectedListId(Number(e.target.value))}
+                    className="w-full p-3 rounded-lg bg-[#0d0d14] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3]"
+                  >
+                    <option value="">-- Select a list --</option>
+                    {userLists.map((list) => (
+                      <option key={list.id} value={list.id}>
+                        {list.title} ({list.movieCount} movies)
+                      </option>
+                    ))}
+                  </select>
+                  
+                  <div className="mt-3 text-center">
+                    <Link
+                      href="/planner"
+                      className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
+                    >
+                      Or create a new list
+                    </Link>
+                  </div>
+                </div>
               ) : (
-                <>
-                  {isLoadingLists ? (
-                    <div className="text-center py-4 mb-4">
-                      <p className="text-gray-400">Loading your lists...</p>
-                    </div>
-                  ) : listError ? (
-                    <div className="bg-red-900/30 border border-red-800 text-white p-4 rounded-lg mb-4">
-                      {listError}
-                    </div>
-                  ) : userLists.length > 0 ? (
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium mb-2">
-                        Select a list:
-                      </label>
-                      <select
-                        value={selectedListId || ''}
-                        onChange={(e) => setSelectedListId(Number(e.target.value))}
-                        className="w-full p-3 rounded-lg bg-[#0d0d14] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3]"
-                      >
-                        <option value="">-- Select a list --</option>
-                        {userLists.map((list) => (
-                          <option key={list.id} value={list.id}>
-                            {list.title} ({list.movieCount} movies)
-                          </option>
-                        ))}
-                      </select>
-                      
-                      <div className="mt-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setShowNewListForm(true)}
-                          className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline text-sm"
-                        >
-                          Or create a new list
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 mb-4">
-                      <p className="text-gray-400 mb-2">You don't have any lists yet.</p>
-                      <button
-                        type="button"
-                        onClick={() => setShowNewListForm(true)}
-                        className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
-                      >
-                        Create your first list
-                      </button>
-                    </div>
-                  )}
-                </>
+                <div className="text-center py-4 mb-4">
+                  <p className="text-gray-400 mb-2">You don't have any lists yet.</p>
+                  <Link
+                    href="/planner"
+                    className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
+                  >
+                    Create your first list
+                  </Link>
+                </div>
               )}
               
               <div className="flex justify-end gap-2">
@@ -400,16 +375,14 @@ export default function Home() {
                 >
                   Cancel
                 </button>
-                {!showNewListForm && (
-                  <button
-                    type="button"
-                    onClick={addMovieToList}
-                    disabled={!selectedListId || isAddingToList}
-                    className="bg-[#d2b48c] text-[#0d0d14] py-2 px-6 rounded-lg hover:bg-[#e4c9a3] transition duration-200 disabled:opacity-50"
-                  >
-                    {isAddingToList ? 'Adding...' : 'Add to List'}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={addMovieToList}
+                  disabled={!selectedListId || isAddingToList}
+                  className="bg-[#d2b48c] text-[#0d0d14] py-2 px-6 rounded-lg hover:bg-[#e4c9a3] transition duration-200 disabled:opacity-50"
+                >
+                  {isAddingToList ? 'Adding...' : 'Add to List'}
+                </button>
               </div>
             </>
           )}
