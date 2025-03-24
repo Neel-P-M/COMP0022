@@ -53,7 +53,7 @@ def delete_movie_from_list(user_id, list_id, movie_id):
         cursor.execute(check_query, (list_id, movie_id))
         existing = cursor.fetchone()
         
-        if existing:
+        if not existing:
             cursor.close()
             conn.close()
             return {
