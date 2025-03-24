@@ -61,17 +61,17 @@ export default function Home() {
   const [moviesPerPage, setMoviesPerPage] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
   const [paginatedMovies, setPaginatedMovies] = useState<Movie[]>([]);
+
+  //Date State
+  const [yearFrom, setYearFrom] = useState<string>('');
+  const [yearTo, setYearTo] = useState<string>('');
+  const [minYear, setMinYear] = useState<number>(1900);
+  const [maxYear, setMaxYear] = useState<number>(2025);
   
   // Get all unique genres from movies array
   const allGenres = [...new Set([
     ...movies.flatMap(movie => movie.genres),
   ])].sort();
-
-  const allPrincipals = [...new Set(
-    movies.flatMap(movie => 
-      movie.principals.map(principal => principal.name)
-    )
-  )].sort();
 
   // Fetch movies data
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function Home() {
         }
 
         const data = await res.json();
-        const formattedMovies = data.map((movie) => ({
+        const formattedMovies = data.map((movie: Movie) => ({
           id: movie.id,
           title: movie.title,
           release_year: movie.release_year,
@@ -94,6 +94,12 @@ export default function Home() {
           genres: movie.genres || [],
           principals: movie.principals || []
         }));
+
+        if (formattedMovies.length > 0) {
+          const years = formattedMovies.map((movie: Movie) => movie.release_year);
+          setMinYear(Math.min(...years));
+          setMaxYear(Math.max(...years));
+        }
 
         setMovies(formattedMovies);
         setError(null);
@@ -147,14 +153,20 @@ export default function Home() {
           movie.principals.some(principal => 
             principal.name.toLowerCase().includes(searchPrincipal.toLowerCase())
           );
-        return matchesSearch && matchesGenre && matchesPrincipal;
+
+        const yearFromNumber = yearFrom ? parseInt(yearFrom) : null;
+        const yearToNumber = yearTo ? parseInt(yearTo) : null;
+        const matchesYearFrom = yearFromNumber === null || movie.release_year >= yearFromNumber;
+        const matchesYearTo = yearToNumber === null || movie.release_year <= yearToNumber;
+        
+        return matchesSearch && matchesGenre && matchesPrincipal && matchesYearFrom && matchesYearTo;
       });
     };
 
     const filtered = filterMovies(movies)
     setFilteredMovies(filtered);
     setTotalPages(Math.ceil(filtered.length / moviesPerPage));
-  }, [searchTerm, selectedGenre, searchPrincipal, movies, moviesPerPage]);
+  }, [searchTerm, selectedGenre, searchPrincipal, movies, moviesPerPage, yearFrom, yearTo]);
 
   // Handle pagination
   useEffect(() => {
@@ -184,46 +196,10 @@ export default function Home() {
     setShowListModal(true);
   }, [isAuthenticated]);
 
-  // Create a new list
-  const createNewList = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newListTitle.trim()) {
-      return;
-    }
-    
-    try {
-      setIsCreatingList(true);
-      
-      const res = await fetch('/api/planner/lists', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: newListTitle.trim(),
-          note: newListNote.trim(),
-        }),
-      });
-      
-      if (!res.ok) {
-        throw new Error('Failed to create list');
-      }
-      
-      const newList = await res.json();
-      setUserLists(prevLists => [...prevLists, newList]);
-      setSelectedListId(newList.id);
-      setNewListTitle('');
-      setNewListNote('');
-      
-    } catch (error) {
-      console.error('Error creating list:', error);
-      setAddToListError('Failed to create new list. Please try again.');
-    } finally {
-      setIsCreatingList(false);
-    }
-  }, [newListTitle, newListNote]);
-
+  const handleResetYearFilters = () => {
+    setYearFrom('');
+    setYearTo('');
+  };
 
   // Add movie to selected list
   const addMovieToList = useCallback(async () => {
@@ -515,7 +491,8 @@ export default function Home() {
             </button>
           </div>
           
-          <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Genre Filter */}
             <div className="w-full md:w-auto">
               <select 
                 className="p-3 rounded-lg bg-[#1a1a24] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3] w-full md:w-48"
@@ -527,6 +504,44 @@ export default function Home() {
                   <option key={genre} value={genre}>{genre}</option>
                 ))}
               </select>
+            </div>
+            
+            {/* Date Range Filter */}
+            <div className="w-full md:w-auto flex flex-col md:flex-row gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">From</span>
+                <input
+                  type="number"
+                  min={minYear}
+                  max={maxYear}
+                  value={yearFrom}
+                  onChange={(e) => setYearFrom(e.target.value)}
+                  placeholder={minYear.toString()}
+                  className="p-3 rounded-lg bg-[#1a1a24] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3] w-24"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">To</span>
+                <input
+                  type="number"
+                  min={minYear}
+                  max={maxYear}
+                  value={yearTo}
+                  onChange={(e) => setYearTo(e.target.value)}
+                  placeholder={maxYear.toString()}
+                  className="p-3 rounded-lg bg-[#1a1a24] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3] w-24"
+                />
+              </div>
+
+              {(yearFrom || yearTo) && (
+                <button
+                  onClick={handleResetYearFilters}
+                  className="p-2 text-sm text-gray-400 hover:text-[#e4c9a3]"
+                >
+                  Reset
+                </button>
+              )}
             </div>
           </div>
         </div>
