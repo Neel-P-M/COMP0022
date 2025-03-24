@@ -6,7 +6,7 @@ export async function GET() {
   try {
     // Path to your Python script
     console.log("running...")
-    const pythonScript = path.join(process.cwd(), 'src', 'scripts', 'genre_analysis.py');
+    const pythonScript = path.join(process.cwd(), 'src', 'scripts', 'personality_analysis.py');
     
     try {
       // First try to execute the Python script

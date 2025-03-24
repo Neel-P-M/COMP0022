@@ -557,12 +557,6 @@ export default function Home() {
                     />
                   </div>
                   <div className="bg-[#13131b] p-4 flex justify-between items-center">
-                    <Link 
-                      href={`/movies/${movie.id}`}
-                      className="text-sm text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
-                    >
-                      View Details
-                    </Link>
                     <button 
                       onClick={() => handleAddToList(movie)}
                       className="text-sm text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"

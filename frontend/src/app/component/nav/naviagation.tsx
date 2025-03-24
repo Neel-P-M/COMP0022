@@ -21,9 +21,19 @@ export default function Navigation() {
               Genre Analysis Report
             </Link>
           </li>
+          <li className={`nav-item ${pathname === "/audience_analysis" ? "active" : ""}`}>
+            <Link href="/audience_analysis" className="nav-link">
+              Audience Analysis
+            </Link>
+          </li>
           <li className={`nav-item ${pathname === "/movies/unreleased" ? "active" : ""}`}>
             <Link href="/movies/unreleased" className="nav-link">
               Unreleased Movie
+            </Link>
+          </li>
+          <li className={`nav-item ${pathname === "/personality_traits" ? "active" : ""}`}>
+            <Link href="/personality_traits" className="nav-link">
+              Personality Analysis
             </Link>
           </li>
           <li className={`nav-item ${pathname === "/planner" ? "active" : ""}`}>
