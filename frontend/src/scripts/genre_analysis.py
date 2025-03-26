@@ -15,7 +15,7 @@ def main():
             password="password",
             database="moviefestival"
         )
-        
+
         # Create a cursor
         cursor = conn.cursor(dictionary=True)
         

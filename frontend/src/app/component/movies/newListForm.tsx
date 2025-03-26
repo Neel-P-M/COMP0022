@@ -1,5 +1,4 @@
-// Extract this component outside of your Home component
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 
 interface NewListFormProps {
   newListTitle: string;
@@ -11,7 +10,6 @@ interface NewListFormProps {
   onCancel: () => void;
 }
 
-// Use React.memo to prevent unnecessary re-renders
 export const NewListForm = React.memo(({ 
   newListTitle, 
   setNewListTitle, 
@@ -21,16 +19,25 @@ export const NewListForm = React.memo(({
   onSubmit,
   onCancel
 }: NewListFormProps) => {
-  // Use a ref to maintain focus
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
   
-  // Focus the input when the form appears
+  // Focus the input only on initial mount
   useEffect(() => {
     if (titleInputRef.current) {
       titleInputRef.current.focus();
     }
   }, []);
   
+  // Create memoized handlers to prevent focus issues
+  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewListTitle(e.target.value);
+  }, [setNewListTitle]);
+  
+  const handleNotesChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewListNote(e.target.value);
+  }, [setNewListNote]);
+
   return (
     <form onSubmit={onSubmit} className="bg-[#13131b] p-4 rounded-lg border border-[#2a2a34] mb-4">
       <h3 className="text-lg font-semibold text-[#e4c9a3] mb-3">Create New List</h3>
@@ -44,7 +51,7 @@ export const NewListForm = React.memo(({
           type="text"
           id="newListTitle"
           value={newListTitle}
-          onChange={(e) => setNewListTitle(e.target.value)}
+          onChange={handleTitleChange}
           className="w-full p-2 rounded-lg bg-[#0d0d14] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3]"
           required
         />
@@ -52,13 +59,19 @@ export const NewListForm = React.memo(({
       
       <div className="mb-3">
         <label htmlFor="newListNote" className="block text-sm font-medium mb-1">
-          Notes
+          Notes <span className="text-red-500">*</span>
         </label>
         <textarea
+          ref={notesRef}
           id="newListNote"
           value={newListNote}
-          onChange={(e) => setNewListNote(e.target.value)}
+          onChange={handleNotesChange}
+          onFocus={(e) => {
+            // Prevent any focus stealing
+            e.stopPropagation();
+          }}
           className="w-full p-2 rounded-lg bg-[#0d0d14] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3] min-h-[80px]"
+          required
         />
       </div>
       
@@ -82,5 +95,4 @@ export const NewListForm = React.memo(({
   );
 });
 
-// To prevent ESLint warnings about missing display name
 NewListForm.displayName = 'NewListForm';

@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MovieCard } from './component/movies/movieCard';
 import { useAuth } from '@/app/context/AuthContext';
 import Link from 'next/link';
-import { NewListForm } from '@/app/component/movies/newListForm'; 
 
 interface Principal {
   name: string;
@@ -45,7 +44,6 @@ export default function Home() {
   const [showListModal, setShowListModal] = useState(false);
   const [movieToAdd, setMovieToAdd] = useState<Movie | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [showNewListForm, setShowNewListForm] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
   const [newListNote, setNewListNote] = useState('');
   const [isCreatingList, setIsCreatingList] = useState(false);
@@ -63,17 +61,17 @@ export default function Home() {
   const [moviesPerPage, setMoviesPerPage] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
   const [paginatedMovies, setPaginatedMovies] = useState<Movie[]>([]);
+
+  //Date State
+  const [yearFrom, setYearFrom] = useState<string>('');
+  const [yearTo, setYearTo] = useState<string>('');
+  const [minYear, setMinYear] = useState<number>(1900);
+  const [maxYear, setMaxYear] = useState<number>(2025);
   
   // Get all unique genres from movies array
   const allGenres = [...new Set([
     ...movies.flatMap(movie => movie.genres),
   ])].sort();
-
-  const allPrincipals = [...new Set(
-    movies.flatMap(movie => 
-      movie.principals.map(principal => principal.name)
-    )
-  )].sort();
 
   // Fetch movies data
   useEffect(() => {
@@ -88,7 +86,7 @@ export default function Home() {
         }
 
         const data = await res.json();
-        const formattedMovies = data.map((movie) => ({
+        const formattedMovies = data.map((movie: Movie) => ({
           id: movie.id,
           title: movie.title,
           release_year: movie.release_year,
@@ -96,6 +94,12 @@ export default function Home() {
           genres: movie.genres || [],
           principals: movie.principals || []
         }));
+
+        if (formattedMovies.length > 0) {
+          const years = formattedMovies.map((movie: Movie) => movie.release_year);
+          setMinYear(Math.min(...years));
+          setMaxYear(Math.max(...years));
+        }
 
         setMovies(formattedMovies);
         setError(null);
@@ -149,14 +153,20 @@ export default function Home() {
           movie.principals.some(principal => 
             principal.name.toLowerCase().includes(searchPrincipal.toLowerCase())
           );
-        return matchesSearch && matchesGenre && matchesPrincipal;
+
+        const yearFromNumber = yearFrom ? parseInt(yearFrom) : null;
+        const yearToNumber = yearTo ? parseInt(yearTo) : null;
+        const matchesYearFrom = yearFromNumber === null || movie.release_year >= yearFromNumber;
+        const matchesYearTo = yearToNumber === null || movie.release_year <= yearToNumber;
+        
+        return matchesSearch && matchesGenre && matchesPrincipal && matchesYearFrom && matchesYearTo;
       });
     };
 
     const filtered = filterMovies(movies)
     setFilteredMovies(filtered);
     setTotalPages(Math.ceil(filtered.length / moviesPerPage));
-  }, [searchTerm, selectedGenre, searchPrincipal, movies, moviesPerPage]);
+  }, [searchTerm, selectedGenre, searchPrincipal, movies, moviesPerPage, yearFrom, yearTo]);
 
   // Handle pagination
   useEffect(() => {
@@ -183,55 +193,13 @@ export default function Home() {
     setSelectedListId(null);
     setAddToListSuccess(null);
     setAddToListError(null);
-    setShowNewListForm(false);
     setShowListModal(true);
   }, [isAuthenticated]);
 
-  // Create a new list
-  const createNewList = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newListTitle.trim()) {
-      return;
-    }
-    
-    try {
-      setIsCreatingList(true);
-      
-      const res = await fetch('/api/planner/lists', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: newListTitle.trim(),
-          note: newListNote.trim(),
-        }),
-      });
-      
-      if (!res.ok) {
-        throw new Error('Failed to create list');
-      }
-      
-      const newList = await res.json();
-      setUserLists(prevLists => [...prevLists, newList]);
-      setSelectedListId(newList.id);
-      setShowNewListForm(false);
-      setNewListTitle('');
-      setNewListNote('');
-      
-    } catch (error) {
-      console.error('Error creating list:', error);
-      setAddToListError('Failed to create new list. Please try again.');
-    } finally {
-      setIsCreatingList(false);
-    }
-  }, [newListTitle, newListNote]);
-
-  // The handler to cancel form display
-  const handleCancelNewListForm = useCallback(() => {
-    setShowNewListForm(false);
-  }, []);
+  const handleResetYearFilters = () => {
+    setYearFrom('');
+    setYearTo('');
+  };
 
   // Add movie to selected list
   const addMovieToList = useCallback(async () => {
@@ -328,68 +296,51 @@ export default function Home() {
                   {addToListError}
                 </div>
               )}
-              
-              {showNewListForm ? (
-                <NewListForm 
-                  newListTitle={newListTitle}
-                  setNewListTitle={setNewListTitle}
-                  newListNote={newListNote}
-                  setNewListNote={setNewListNote}
-                  isCreatingList={isCreatingList}
-                  onSubmit={createNewList}
-                  onCancel={handleCancelNewListForm}
-                />
+              {isLoadingLists ? (
+                <div className="text-center py-4 mb-4">
+                  <p className="text-gray-400">Loading your lists...</p>
+                </div>
+              ) : listError ? (
+                <div className="bg-red-900/30 border border-red-800 text-white p-4 rounded-lg mb-4">
+                  {listError}
+                </div>
+              ) : userLists.length > 0 ? (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">
+                    Select a list:
+                  </label>
+                  <select
+                    value={selectedListId || ''}
+                    onChange={(e) => setSelectedListId(Number(e.target.value))}
+                    className="w-full p-3 rounded-lg bg-[#0d0d14] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3]"
+                  >
+                    <option value="">-- Select a list --</option>
+                    {userLists.map((list) => (
+                      <option key={list.id} value={list.id}>
+                        {list.title} ({list.movieCount} movies)
+                      </option>
+                    ))}
+                  </select>
+                  
+                  <div className="mt-3 text-center">
+                    <Link
+                      href="/planner"
+                      className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
+                    >
+                      Or create a new list
+                    </Link>
+                  </div>
+                </div>
               ) : (
-                <>
-                  {isLoadingLists ? (
-                    <div className="text-center py-4 mb-4">
-                      <p className="text-gray-400">Loading your lists...</p>
-                    </div>
-                  ) : listError ? (
-                    <div className="bg-red-900/30 border border-red-800 text-white p-4 rounded-lg mb-4">
-                      {listError}
-                    </div>
-                  ) : userLists.length > 0 ? (
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium mb-2">
-                        Select a list:
-                      </label>
-                      <select
-                        value={selectedListId || ''}
-                        onChange={(e) => setSelectedListId(Number(e.target.value))}
-                        className="w-full p-3 rounded-lg bg-[#0d0d14] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3]"
-                      >
-                        <option value="">-- Select a list --</option>
-                        {userLists.map((list) => (
-                          <option key={list.id} value={list.id}>
-                            {list.title} ({list.movieCount} movies)
-                          </option>
-                        ))}
-                      </select>
-                      
-                      <div className="mt-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setShowNewListForm(true)}
-                          className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline text-sm"
-                        >
-                          Or create a new list
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 mb-4">
-                      <p className="text-gray-400 mb-2">You don't have any lists yet.</p>
-                      <button
-                        type="button"
-                        onClick={() => setShowNewListForm(true)}
-                        className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
-                      >
-                        Create your first list
-                      </button>
-                    </div>
-                  )}
-                </>
+                <div className="text-center py-4 mb-4">
+                  <p className="text-gray-400 mb-2">You don't have any lists yet.</p>
+                  <Link
+                    href="/planner"
+                    className="text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
+                  >
+                    Create your first list
+                  </Link>
+                </div>
               )}
               
               <div className="flex justify-end gap-2">
@@ -400,16 +351,14 @@ export default function Home() {
                 >
                   Cancel
                 </button>
-                {!showNewListForm && (
-                  <button
-                    type="button"
-                    onClick={addMovieToList}
-                    disabled={!selectedListId || isAddingToList}
-                    className="bg-[#d2b48c] text-[#0d0d14] py-2 px-6 rounded-lg hover:bg-[#e4c9a3] transition duration-200 disabled:opacity-50"
-                  >
-                    {isAddingToList ? 'Adding...' : 'Add to List'}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={addMovieToList}
+                  disabled={!selectedListId || isAddingToList}
+                  className="bg-[#d2b48c] text-[#0d0d14] py-2 px-6 rounded-lg hover:bg-[#e4c9a3] transition duration-200 disabled:opacity-50"
+                >
+                  {isAddingToList ? 'Adding...' : 'Add to List'}
+                </button>
               </div>
             </>
           )}
@@ -542,7 +491,8 @@ export default function Home() {
             </button>
           </div>
           
-          <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Genre Filter */}
             <div className="w-full md:w-auto">
               <select 
                 className="p-3 rounded-lg bg-[#1a1a24] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3] w-full md:w-48"
@@ -554,6 +504,44 @@ export default function Home() {
                   <option key={genre} value={genre}>{genre}</option>
                 ))}
               </select>
+            </div>
+            
+            {/* Date Range Filter */}
+            <div className="w-full md:w-auto flex flex-col md:flex-row gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">From</span>
+                <input
+                  type="number"
+                  min={minYear}
+                  max={maxYear}
+                  value={yearFrom}
+                  onChange={(e) => setYearFrom(e.target.value)}
+                  placeholder={minYear.toString()}
+                  className="p-3 rounded-lg bg-[#1a1a24] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3] w-24"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">To</span>
+                <input
+                  type="number"
+                  min={minYear}
+                  max={maxYear}
+                  value={yearTo}
+                  onChange={(e) => setYearTo(e.target.value)}
+                  placeholder={maxYear.toString()}
+                  className="p-3 rounded-lg bg-[#1a1a24] text-white border border-[#2a2a34] focus:outline-none focus:border-[#e4c9a3] w-24"
+                />
+              </div>
+
+              {(yearFrom || yearTo) && (
+                <button
+                  onClick={handleResetYearFilters}
+                  className="p-2 text-sm text-gray-400 hover:text-[#e4c9a3]"
+                >
+                  Reset
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -584,12 +572,6 @@ export default function Home() {
                     />
                   </div>
                   <div className="bg-[#13131b] p-4 flex justify-between items-center">
-                    <Link 
-                      href={`/movies/${movie.id}`}
-                      className="text-sm text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"
-                    >
-                      View Details
-                    </Link>
                     <button 
                       onClick={() => handleAddToList(movie)}
                       className="text-sm text-[#d2b48c] hover:text-[#e4c9a3] hover:underline"

@@ -2,45 +2,42 @@ import json
 import mysql.connector
 import sys
 import pandas as pd
+import os
+import time
+import decimal
 
 def main():
     """
-    Connect to the MySQL database, run analysis queries, and output results as JSON.
+    Connect to the MySQL database, run analysis queries, and output results in a 2D array format.
+    With caching to avoid recalculating frequently.
     """
+    cache_file = os.path.join(os.path.dirname(__file__), 'personality_genre_cache.json')
+    
+    # Check if we have a recent cache file (less than 24 hours old)
+    if os.path.exists(cache_file):
+        file_age = time.time() - os.path.getmtime(cache_file)
+        # If cache is less than 24 hours old, use it
+        if file_age < 86400:  # 86400 seconds = 24 hours
+            try:
+                with open(cache_file, 'r') as f:
+                    cached_data = f.read()
+                    print(cached_data)
+                    return
+            except Exception as e:
+                pass
+    
     try:
         # Connect to the MySQL database
         conn = mysql.connector.connect(
-            host="localhost",
+            host="database",
             port=3306,
-            user="root",
-            password="my-secret-pw",
-            database="moviefestivaldatabase"
+            user="user",
+            password="password",
+            database="moviefestival"
         )
         
         # Create a cursor
         cursor = conn.cursor(dictionary=True)
-        
-        results = {}
-        
-        # Function to calculate correlation between movie and trait
-        def correlationMovieAndTrait(movieId, trait):
-            cursor.execute("""SELECT * 
-                           FROM (SELECT viewerId, rating FROM ratings WHERE movieId = %s) AS r
-                           JOIN viewers v USING (viewerId);""", (movieId,))
-            ratingsWithViewer = cursor.fetchall()
-
-            column_titles = [d[0] for d in cursor.description]
-            ratingAndViewerData = pd.DataFrame(ratingsWithViewer, columns=column_titles)
-            ratingAndViewerData = ratingAndViewerData.dropna(subset=["rating",trait])
-
-            if ratingAndViewerData.empty:
-                return "Empty"
-
-            if len(ratingAndViewerData[trait].unique()) < 2 or len(ratingAndViewerData["rating"].unique()) < 2:
-                return "Less than 2 unique values"
-
-            correlation = ratingAndViewerData["rating"].corr(ratingAndViewerData[trait])
-            return correlation
 
         # Function to calculate correlation between genre and trait
         def correlationGenreAndTrait(genreId, trait):
@@ -52,76 +49,79 @@ def main():
             
             column_titles = [d[0] for d in cursor.description]
             ratingAndViewerData = pd.DataFrame(ratingsWithViewer, columns=column_titles)
-            ratingAndViewerData = ratingAndViewerData.dropna(subset=["rating",trait])
+            ratingAndViewerData = ratingAndViewerData.dropna(subset=["rating", trait])
 
             if ratingAndViewerData.empty:
-                return "Empty"
+                return 0
 
             if len(ratingAndViewerData[trait].unique()) < 2 or len(ratingAndViewerData["rating"].unique()) < 2:
-                return "Less than 2 unique values"
+                return 0
 
             correlation = ratingAndViewerData["rating"].corr(ratingAndViewerData[trait])
             return correlation
 
-        # Function to calculate correlation between genre string and trait
-        def correlationGenreStringAndTrait(genreString, trait):
-            cursor.execute("""SELECT genreId 
-                           FROM genres
-                           WHERE genreString = %s""", (genreString,))
-            genre = cursor.fetchall()
-            genreId = genre[0][0]
-            return correlationGenreAndTrait(genreId, trait)
-
-        # Function to calculate correlation between genre and all traits
-        def correlationGenreAndAllTraits(genreString):
-            cursor.execute("""SELECT genreId 
-                           FROM genres
-                           WHERE genreString = %s""", (genreString,))
-            genre = cursor.fetchall()
-            genreId = genre[0][0]
-            correlations = pd.Series(index=["openness",
-                                            "agreeableness",
-                                            "emotional_stability",
-                                            "conscientiousness",
-                                            "extroversion"],
-                                            dtype=float,
-                                            name=genreString)
-            for trait in correlations.index:
-                correlations[trait] = correlationGenreAndTrait(genreId, trait)
-            return correlations.to_dict()
-
-        # Function to calculate correlation between all genres and a trait
-        def correlationAllGenresAndTrait(trait):
-            cursor.execute("""SELECT genreId, genreString 
-                           FROM genres""")
-            genres = cursor.fetchall()
-            genreStrings = [genre['genreString'] for genre in genres]
-            genreIds = [genre['genreId'] for genre in genres]
-            correlations = pd.Series(index=genreStrings,
-                                            dtype=float)
-            for i in range(len(genreStrings)):
-                correlations[genreStrings[i]] = correlationGenreAndTrait(genreIds[i], trait)
-            return correlations.to_dict()
-
-        # Example usage
-        results['correlation_genre_string_and_trait'] = correlationGenreStringAndTrait("Action", "openness")
-        results['correlation_genre_and_all_traits'] = correlationGenreAndAllTraits("Action")
-        results['correlation_all_genres_and_trait'] = correlationAllGenresAndTrait("openness")
-
-        # Close connections
+        # Get all genres
+        cursor.execute("SELECT genreId, genreString FROM genres")
+        genres = cursor.fetchall()
+        genre_strings = [genre['genreString'] for genre in genres]
+        genre_ids = [genre['genreId'] for genre in genres]
+        
+        # Define all traits
+        traits = ["openness", "agreeableness", "emotional stability", 
+                  "conscientiousness", "extroversion"]
+        
+        # Prepare heatmap data structure
+        heatmap_data = {
+            "genres": genre_strings,
+            "traits": traits,
+            "correlations": []
+        }
+        
+        # For each genre, calculate correlation with all traits
+        for i, genre_id in enumerate(genre_ids):
+            genre_correlations = []
+            
+            for trait in traits:
+                corr_value = correlationGenreAndTrait(genre_id, trait)
+                
+                # Convert to float if it's a Decimal
+                if isinstance(corr_value, decimal.Decimal):
+                    corr_value = float(corr_value)
+                
+                # Add to correlations list for this genre
+                genre_correlations.append(corr_value)
+            
+            # Add this genre's correlations to the main data structure
+            heatmap_data["correlations"].append(genre_correlations)
+        
+        # Close database connection
         cursor.close()
         conn.close()
         
-        # Output results as JSON
-        # Convert decimal values to float for JSON serialization
+        # Add metadata
+        heatmap_data["metadata"] = {
+            "generated_at": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        # Define JSON encoder for Decimal values
         class DecimalEncoder(json.JSONEncoder):
             def default(self, obj):
-                import decimal
                 if isinstance(obj, decimal.Decimal):
                     return float(obj)
                 return super(DecimalEncoder, self).default(obj)
         
-        print(json.dumps(results, cls=DecimalEncoder))
+        # Output as JSON
+        json_data = json.dumps(heatmap_data, cls=DecimalEncoder)
+        
+        # Save to cache file
+        try:
+            with open(cache_file, 'w') as f:
+                f.write(json_data)
+        except Exception:
+            pass
+        
+        # Print the actual JSON data to stdout
+        print(json_data)
         
     except Exception as e:
         # Print error to stderr and exit with non-zero status
